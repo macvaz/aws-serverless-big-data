@@ -1,8 +1,10 @@
 import time
 import boto3
+import json
 
 # Memory footprint: 75 MBs. No extra layers required. Ends in 1 seconds
 # Way faster!!
+# NodeJS has a way clearer SDK for calling async APIs
 
 CLIENT = boto3.client('athena')
 RESULT_OUTPUT_LOCATION = "s3://testddfv1/queries/"
@@ -44,16 +46,12 @@ def has_query_succeeded(execution_id):
     return False
 
 def lambda_handler(event, context):
-    execution_id = start_query_execution("SELECT * from poc.cars LIMIT 10")
+    named_query = CLIENT.get_named_query(NamedQueryId = "350dd0c3-322a-49e1-bd95-c88a947a40a5")
+    execution_id = start_query_execution(named_query["NamedQuery"]["QueryString"])
 
     query_status = has_query_succeeded(execution_id)
-    print(f"Status: {query_status}")
 
-    print(get_query_results(execution_id=execution_id))
-
-    """
     return {
-        'statusCode': 200,
-        'body': json.dumps('Hello from Lambda!')
+        'statusCode': query_status,
+        'body': json.dumps(get_query_results(execution_id=execution_id))
     }
-    """
