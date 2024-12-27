@@ -1,17 +1,20 @@
-import time
 import boto3
 import json
+import time
+from typing import List
 
 # Memory footprint: 75 MBs. No extra layers required. Ends in 1 seconds
 # Way faster!!
 # NodeJS has a way clearer SDK for calling async APIs
 
 CLIENT = boto3.client('athena')
+
 RESULT_OUTPUT_LOCATION = "s3://testddfv1/queries/"
 
-def start_query_execution(query: str):
+def start_query_execution(query: str, parameters: List[str]):
     response = CLIENT.start_query_execution(
         QueryString=query,
+        ExecutionParameters = parameters,
         ResultConfiguration={"OutputLocation": RESULT_OUTPUT_LOCATION}
     )
 
@@ -41,17 +44,18 @@ def has_query_succeeded(execution_id):
             if state == "SUCCEEDED":
                 return True
 
-        time.sleep(2)
+        time.sleep(1)
 
     return False
 
 def lambda_handler(event, context):
-    named_query = CLIENT.get_named_query(NamedQueryId = "350dd0c3-322a-49e1-bd95-c88a947a40a5")
-    execution_id = start_query_execution(named_query["NamedQuery"]["QueryString"])
+    named_query = CLIENT.get_named_query(NamedQueryId = event["query_id"])
+    query = named_query["NamedQuery"]["QueryString"]
+    execution_id = start_query_execution(query, event["params"])
 
     query_status = has_query_succeeded(execution_id)
 
     return {
         'statusCode': query_status,
-        'body': json.dumps(get_query_results(execution_id=execution_id))
+        'body': execution_id
     }
