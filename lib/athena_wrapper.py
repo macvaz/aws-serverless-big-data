@@ -12,11 +12,11 @@ class AthenaWrapper():
         self.execution_status = []
         
     # PUBLIC API
-    def execute_query_sync(self, file_name: str, event: Dict[str, str], retries: int = 5, wait: float = 1) -> bool:
+    def execute_query_sync(self, file_name: str, event: Dict[str, str], timeout: str, wait: float = 1) -> bool:
         query = self._complete_query(file_name, event)
         execution_id = self._start_query_execution(query)
         self.execution_ids.append(execution_id)
-        status = self._has_query_succeeded(execution_id, retries, wait)
+        status = self._has_query_succeeded(execution_id, timeout, wait)
         self.execution_status.append(status)
         return status
 
@@ -42,21 +42,23 @@ class AthenaWrapper():
 
         return response["QueryExecutionId"]
 
-    def _has_query_succeeded(self, execution_id: str, max_execution: int, wait: float):
+    def _has_query_succeeded(self, execution_id: str, timeout: int, wait: float):
         state = "RUNNING"
+        elapsed_time = 0
 
-        while max_execution > 0 and state in ["RUNNING", "QUEUED"]:
-            max_execution -= 1
+        while state in ["RUNNING", "QUEUED"]:
             response = self.client.get_query_execution(QueryExecutionId=execution_id)
-            if (
-                "QueryExecution" in response
-                and "Status" in response["QueryExecution"]
-                and "State" in response["QueryExecution"]["Status"]
-            ):
+            
+            if ("QueryExecution" in response and "Status" in response["QueryExecution"] and "State" in response["QueryExecution"]["Status"]):
                 state = response["QueryExecution"]["Status"]["State"]
                 if state == "SUCCEEDED":
                     return True
 
             time.sleep(wait)
+            elapsed_time += wait
+
+            if elapsed_time > timeout:
+                return False
+
 
         return False
