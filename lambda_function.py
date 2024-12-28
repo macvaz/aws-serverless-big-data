@@ -9,7 +9,7 @@ from lib.athena_wrapper import AthenaWrapper
 def lambda_handler(event, context):
     # Create required DDL for csv file
     client =  AthenaWrapper(os.environ['QUERY_RESULT_LOCATION'])
-    query_status = client.execute_query_sync("sql/ddl/car_table.sql", event, 60)
+    query_status = client.execute_query_sync("sql/ddl/car_table.sql", event, 0.1)
 
     # Apply DML logic to input data
     query_status = client.execute_query_sync("sql/dml/get_cars_by_brand.sql", event, 60)

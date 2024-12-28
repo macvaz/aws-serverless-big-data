@@ -4,6 +4,9 @@ import time
 from typing import Dict
 from string import Template
 
+class TimeOutException(Exception):
+    pass
+
 class AthenaWrapper():
     def __init__(self, result_output_location: str):
         self.client = boto3.client('athena')
@@ -58,7 +61,7 @@ class AthenaWrapper():
             elapsed_time += wait
 
             if elapsed_time > timeout:
-                return False
+                raise TimeoutError("Execution time was longer than excepted")
 
 
         return False
