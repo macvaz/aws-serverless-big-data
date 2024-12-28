@@ -1,3 +1,5 @@
+import os
+
 from lib.athena_wrapper import AthenaWrapper
 
 # Memory footprint: 75 MBs. No extra layers required. Ends in 1 seconds
@@ -6,7 +8,7 @@ from lib.athena_wrapper import AthenaWrapper
 
 def lambda_handler(event, context):
     # Create required DDL for csv file
-    client =  AthenaWrapper("s3://testddfv1/queries/")
+    client =  AthenaWrapper(os.environ['QUERY_RESULT_LOCATION'])
     query_status = client.execute_query_sync("sql/ddl/car_table.sql", event)
 
     # Apply DML logic to input data
